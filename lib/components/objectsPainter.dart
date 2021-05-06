@@ -148,11 +148,14 @@ class MyPainter extends CustomPainter {
                 onTap: () {
                   print("line  was pressed");
                 },
-                onLongPress: () async {
-                  var result = await showDialog(
-                      context: context,
+                onLongPress: () {
+                  showDialog(
+                      context: pointControllerState
+                          .widgetState.scaffoldKey.currentContext,
                       builder: (context) {
-                        return new EditDialog(context,
+                        return new EditDialog(
+                            pointControllerState
+                                .widgetState.scaffoldKey.currentContext,
                             pointType: PointMode.Length,
                             isFrench: isFrench,
                             anglePoints: null,
@@ -162,19 +165,7 @@ class MyPainter extends CustomPainter {
                             state: state,
                             lineOrAngleId: object.lineObject.pointsId);
                       });
-                  print("result is $result");
-                  if (result != null) {
-                    Navigator.of(context).pushReplacement(MaterialPageRoute(
-                        builder: (context) => ImageScreen(
-                              objectName: objectName,
-                              objectId: objectId,
-                              pointControllerState: this.pointControllerState,
-                              image: image,
-                              imagePath: imagePath,
-                              settings: settings,
-                              moduleName: moduleName,
-                            )));
-                  }
+                  // print("result is $result");
                 },
                 child: Text(
                   object.lineObject.length.toString() +
@@ -208,16 +199,16 @@ class MyPainter extends CustomPainter {
         final thirdPoint = Offset(
             object.angleObject.thirdpointX, object.angleObject.thirdpointY);
 
+        final circlePaint = Paint()
+          ..style = PaintingStyle.fill
+          ..color = AppColors.colorFromHexString(object.angleObject.color) ??
+              AppColors.purpleNormal;
+
         final paint = Paint()
           ..color = AppColors.colorFromHexString(object.angleObject.color) ??
               AppColors.purpleNormal
           ..strokeWidth = object.angleObject.width ?? strokeWidth
           ..style = PaintingStyle.stroke;
-
-        final circlePaint = Paint()
-          ..style = PaintingStyle.fill
-          ..color = AppColors.colorFromHexString(object.angleObject.color) ??
-              AppColors.purpleNormal;
 
         canvas.drawPoints(
             pointMode, [firstPoint, secondPoint, thirdPoint], paint);
@@ -231,21 +222,52 @@ class MyPainter extends CustomPainter {
         canvas.drawCircle(
             thirdPoint, object.angleObject.width + 1, circlePaint);
 
+        ////test block for arc drawing///////////////////////////////////////////////////////
+
+        bool isClockwise = true;
+        //we check if the arc is to be drawn clockwise from the starting point or not
+        if (secondPoint.dx > firstPoint.dx && secondPoint.dx > thirdPoint.dx) {
+          isClockwise = firstPoint.dy > secondPoint.dy;
+        } else if (secondPoint.dx < firstPoint.dx &&
+            secondPoint.dx < thirdPoint.dx) {
+          isClockwise = firstPoint.dy < secondPoint.dy;
+        } else if (secondPoint.dy > firstPoint.dy &&
+            secondPoint.dy > thirdPoint.dy) {
+          isClockwise = firstPoint.dx < thirdPoint.dx;
+        } else if (secondPoint.dy < firstPoint.dy &&
+            secondPoint.dy < thirdPoint.dy) {
+          isClockwise = firstPoint.dx > thirdPoint.dx;
+        }
+        final mid1 = midPoint(firstPoint, secondPoint);
+        final mid2 = midPoint(secondPoint, thirdPoint);
+
+        final arcPath = Path();
+        arcPath.moveTo(mid1.dx, mid1.dy);
+
+        arcPath.arcToPoint(mid2,
+            radius: Radius.circular(120), clockwise: isClockwise);
+
+        canvas.drawPath(arcPath, paint);
+
+        //////////////////////////////////////////////////////////////////////////////////
+        Offset labMid1 = midPoint(firstPoint, thirdPoint);
+        labMid1 = midPoint(secondPoint, labMid1);
+
         if (!object.actionAdded) {
           actionsStackItems.add(Positioned(
-            top: midPoint(firstPoint, thirdPoint).dy - 10,
-            left: midPoint(firstPoint, thirdPoint).dx - 10,
+            top: labMid1.dy,
+            left: labMid1.dx,
             child: InkWell(
-                onTap: () {
-                  print("line  was pressed");
-                },
-                onLongPress: () async {
+                onTap: () {},
+                onLongPress: () {
                   //implement angle edit dialog here
-
-                  var result = await showDialog(
-                      context: context,
+                  showDialog(
+                      context: pointControllerState
+                          .widgetState.scaffoldKey.currentContext,
                       builder: (context) {
-                        return new EditDialog(context,
+                        return new EditDialog(
+                            pointControllerState
+                                .widgetState.scaffoldKey.currentContext,
                             pointType: PointMode.Angle,
                             isFrench: isFrench,
                             anglePoints: object.angleObject,
@@ -255,19 +277,6 @@ class MyPainter extends CustomPainter {
                             state: state,
                             lineOrAngleId: object.angleObject.pointsId);
                       });
-                  // print("result is $result");
-                  if (result != null) {
-                    Navigator.of(context).pushReplacement(MaterialPageRoute(
-                        builder: (context) => ImageScreen(
-                              objectName: objectName,
-                              objectId: objectId,
-                              pointControllerState: this.pointControllerState,
-                              image: image,
-                              imagePath: imagePath,
-                              settings: settings,
-                              moduleName: moduleName,
-                            )));
-                  }
                 },
                 child: Text(
                   object.angleObject.angle.toString() + "°" ?? "value",
@@ -298,7 +307,7 @@ class MyPainter extends CustomPainter {
                   AppColors.purpleNormal;
 
         canvas.drawCircle(object.dotOffset, strokeWidth + 1, circlePaint);
-        print("circle drawn");
+        // print("circle drawn");
       }
     });
   }

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:new_bluebyte/components/inputItem.dart';
 import 'package:new_bluebyte/components/purpleButton.dart';
 import 'package:new_bluebyte/database/dbOps.dart';
@@ -62,7 +63,7 @@ class _InfoGetterState extends State<InfoGetter> {
         setState(() {
           imageSource = val;
         });
-        print("image Source set to $val");
+        // print("image Source set to $val");
       }
     });
     super.initState();
@@ -119,64 +120,70 @@ class _InfoGetterState extends State<InfoGetter> {
                       source: imageSource == Config.camera
                           ? picker.ImageSource.camera
                           : picker.ImageSource.gallery);
-                  imageFile = File(pickedFile.path);
 
-                  // imageFile = await picker.ImagePicker.pickImage(
-                  //     source: imageSource == Config.camera
-                  //         ? picker.ImageSource.camera
-                  //         : picker.ImageSource.gallery);
+                  if (pickedFile != null) {
+                    imageFile = File(pickedFile.path);
 
-                  Directory appDir = await getExternalStorageDirectory();
-                  final imageDir = await Directory(join(appDir.path,
-                          widget.moduleName, widget.objectName, "images"))
-                      .create(recursive: true);
+                    // imageFile = await picker.ImagePicker.pickImage(
+                    //     source: imageSource == Config.camera
+                    //         ? picker.ImageSource.camera
+                    //         : picker.ImageSource.gallery);
 
-                  //we now define the path of the image
-                  final finalPath = join(imageDir.path, "$name.jpg");
+                    Directory appDir = await getExternalStorageDirectory();
+                    final imageDir = await Directory(join(appDir.path,
+                            widget.moduleName, widget.objectName, "images"))
+                        .create(recursive: true);
 
-                  try {
-                    final newIm = await imageFile.copy(finalPath);
-                    // print(newIm.path);
-                    await imageFile.delete(recursive: true);
-                  } catch (e) {
-                    print("could not copy the image $e");
-                  }
+                    //we now define the path of the image
+                    final finalPath = join(imageDir.path, "$name.jpg");
 
-                  ObjectImage newImage = new ObjectImage(
-                      objectId: widget.objectId, path: finalPath, name: name);
+                    try {
+                      final newIm = await imageFile.copy(finalPath);
+                      // print(newIm.path);
+                      await imageFile.delete(recursive: true);
+                    } catch (e) {
+                      print("could not copy the image $e");
+                    }
 
-                  final id = await DbOperations.addImage(newImage);
-                  newImage.imageId = id;
-                  // print("image $name.jpg added to db");
-                  widget.nameController.clear();
+                    ObjectImage newImage = new ObjectImage(
+                        objectId: widget.objectId, path: finalPath, name: name);
 
-                  await Provider.of<ImagesProvider>(context, listen: false)
-                      .getImages(widget.objectId);
+                    final id = await DbOperations.addImage(newImage);
+                    newImage.imageId = id;
+                    // print("image $name.jpg added to db");
+                    widget.nameController.clear();
 
-                  if (widget.fromImageScreen) {
-                    int count = 3;
-                    await Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => ImageScreen(
-                                objectName: widget.objectName,
-                                moduleName: widget.moduleName,
-                                settings: widget.widgetSettings,
-                                imagePath: finalPath,
-                                image: newImage)), (route) {
-                      count--;
+                    await Provider.of<ImagesProvider>(context, listen: false)
+                        .getImages(widget.objectId);
 
-                      return count == 0 ? true : false;
-                    });
+                    if (widget.fromImageScreen) {
+                      int count = 3;
+                      await Navigator.of(context, rootNavigator: true)
+                          .pushAndRemoveUntil(
+                              MaterialPageRoute(
+                                  builder: (context) => ImageScreen(
+                                      objectName: widget.objectName,
+                                      moduleName: widget.moduleName,
+                                      settings: widget.widgetSettings,
+                                      imagePath: finalPath,
+                                      image: newImage)), (route) {
+                        count--;
+
+                        return count == 0 ? true : false;
+                      });
+                    } else {
+                      await Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(
+                              builder: (context) => ImageScreen(
+                                  objectName: widget.objectName,
+                                  moduleName: widget.moduleName,
+                                  settings: widget.widgetSettings,
+                                  imagePath: finalPath,
+                                  image: newImage)));
+                    }
                   } else {
-                    await Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(
-                            builder: (context) => ImageScreen(
-                                objectName: widget.objectName,
-                                moduleName: widget.moduleName,
-                                settings: widget.widgetSettings,
-                                imagePath: finalPath,
-                                image: newImage)));
+                    Fluttertoast.showToast(msg: 'no image selected');
+                    Navigator.of(context).pop();
                   }
                 } else
                   NotificationDialog.showMyDialogue(

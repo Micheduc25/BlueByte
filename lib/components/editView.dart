@@ -1,6 +1,7 @@
 import 'package:new_bluebyte/components/pointMode.dart';
 import 'package:new_bluebyte/components/purpleButton.dart';
 import 'package:new_bluebyte/database/dbOps.dart';
+import 'package:new_bluebyte/provider/editStream.dart';
 import 'package:new_bluebyte/utils/colors&fonts.dart';
 import 'package:new_bluebyte/utils/config.dart';
 import 'package:new_bluebyte/utils/languages.dart';
@@ -41,6 +42,7 @@ class EditView extends StatefulWidget {
 class _EditViewState extends State<EditView> {
   Color newLineColor;
   Color newBackgroundColor;
+  final editService = EditStreamService();
   @override
   void initState() {
     super.initState();
@@ -76,7 +78,7 @@ class _EditViewState extends State<EditView> {
                       padding: EdgeInsets.only(right: 5),
                       child: TextField(
                         controller: widget.valueController,
-                        autofocus: true,
+                        autofocus: false,
                         textAlign: TextAlign.center,
                         cursorColor: AppColors.purpleNormal,
                         decoration: InputDecoration(
@@ -192,7 +194,7 @@ class _EditViewState extends State<EditView> {
                 newLineColor = color;
               setState(() {});
 
-              print("color was set to $color");
+              // print("color was set to $color");
             },
           ),
           SizedBox(
@@ -256,71 +258,75 @@ class _EditViewState extends State<EditView> {
           SizedBox(
             height: 10,
           ),
-          PurpleButton(
-            label: "OK",
-            onPressed: () async {
-              //implement line edition function
+          Builder(
+            builder: (context) => PurpleButton(
+              label: "OK",
+              onPressed: () async {
+                //implement line edition function
 
-              if (widget.valueController.text.isNotEmpty &&
-                  widget.widthController.text.isNotEmpty) {
-                //we check if the new value of the valuefield is valid
-                var isValueValid = false;
-                if (widget.initialValue != widget.valueController.text &&
-                    double.tryParse(widget.valueController.text) != null) {
-                  isValueValid = true;
+                if (widget.valueController.text.isNotEmpty &&
+                    widget.widthController.text.isNotEmpty) {
+                  //we check if the new value of the valuefield is valid
+                  var isValueValid = false;
+                  if (widget.initialValue != widget.valueController.text &&
+                      double.tryParse(widget.valueController.text) != null) {
+                    isValueValid = true;
+                  }
+
+                  //we check if the new value of the width field is valid
+                  var isWidthValid = false;
+                  if (widget.initialWidth != widget.widthController.text &&
+                      double.tryParse(widget.widthController.text) != null) {
+                    isWidthValid = true;
+                  }
+
+                  //then we update the data in the database
+                  if (isValueValid ||
+                      isWidthValid ||
+                      widget.lineColor != newLineColor ||
+                      widget.backgroundColor != newBackgroundColor) {
+                    await DbOperations.editPoints(
+                        widget.pointType == PointMode.Length
+                            ? Config.lengthpoints
+                            : Config.anglepoints,
+                        widget.widget.lineOrAngleId,
+                        widget.pointType == PointMode.Length
+                            ? {
+                                Config.length: isValueValid
+                                    ? widget.valueController.text
+                                    : widget.initialValue,
+                                Config.width: isWidthValid
+                                    ? widget.widthController.text
+                                    : widget.initialWidth,
+                                Config.color: newLineColor.toString(),
+                                Config.backgroundColor:
+                                    newBackgroundColor.toString()
+                              }
+                            : {
+                                Config.angle: isValueValid
+                                    ? widget.valueController.text
+                                    : widget.initialValue,
+                                Config.width: isWidthValid
+                                    ? widget.widthController.text
+                                    : widget.initialWidth,
+                                Config.color: newLineColor.toString(),
+                                Config.backgroundColor:
+                                    newBackgroundColor.toString()
+                              });
+
+                    await widget.widget.controller.loadPoints(context);
+
+                    // if (widget.widget.state.mounted)
+                    //   widget.widget.state.setState(() {
+                    //     print("setState called oh");
+                    //   });
+                  }
                 }
 
-                //we check if the new value of the width field is valid
-                var isWidthValid = false;
-                if (widget.initialWidth != widget.widthController.text &&
-                    double.tryParse(widget.widthController.text) != null) {
-                  isWidthValid = true;
-                }
-
-                //then we update the data in the database
-                if (isValueValid ||
-                    isWidthValid ||
-                    widget.lineColor != newLineColor ||
-                    widget.backgroundColor != newBackgroundColor) {
-                  await DbOperations.editPoints(
-                      widget.pointType == PointMode.Length
-                          ? Config.lengthpoints
-                          : Config.anglepoints,
-                      widget.widget.lineOrAngleId,
-                      widget.pointType == PointMode.Length
-                          ? {
-                              Config.length: isValueValid
-                                  ? widget.valueController.text
-                                  : widget.initialValue,
-                              Config.width: isWidthValid
-                                  ? widget.widthController.text
-                                  : widget.initialWidth,
-                              Config.color: newLineColor.toString(),
-                              Config.backgroundColor:
-                                  newBackgroundColor.toString()
-                            }
-                          : {
-                              Config.angle: isValueValid
-                                  ? widget.valueController.text
-                                  : widget.initialValue,
-                              Config.width: isWidthValid
-                                  ? widget.widthController.text
-                                  : widget.initialWidth,
-                              Config.color: newLineColor.toString(),
-                              Config.backgroundColor:
-                                  newBackgroundColor.toString()
-                            });
-
-                  widget.widget.controller.loadPoints(context);
-
-                  if (widget.widget.state.mounted)
-                    widget.widget.state.setState(() {
-                      print("setState called oh");
-                    });
-                }
-              }
-              Navigator.of(context).pop(true);
-            },
+                widget.widget.controller.editService.emitEditEvent(true);
+                // Navigator.of(context, rootNavigator: true).pop(true);
+              },
+            ),
           )
         ],
       ),

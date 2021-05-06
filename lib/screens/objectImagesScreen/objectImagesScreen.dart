@@ -52,6 +52,7 @@ class _ObjectImagesState extends State<ObjectImages> {
   String objectName;
   bool canDelete;
   List<int> imagesToDeleteIds;
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -61,7 +62,12 @@ class _ObjectImagesState extends State<ObjectImages> {
     objectImages = [];
     Future.delayed(Duration.zero, () {
       Provider.of<ImagesProvider>(context, listen: false)
-          .getImages(widget.objectId);
+          .getImages(widget.objectId)
+          .then((value) => {
+                setState(() {
+                  isLoading = false;
+                })
+              });
     });
     imagesToDeleteIds = [];
     canDelete = false;
@@ -316,74 +322,80 @@ class _ObjectImagesState extends State<ObjectImages> {
       body: Center(
           child: Container(
         padding: EdgeInsets.all(5),
-        child: objectImages.isEmpty
-            ? Center(
-                child: Text(
-                  Languages.noImages[isFrench ? Config.fr : Config.en],
-                  style: Styles.purpleTextLarge,
-                  textAlign: TextAlign.center,
-                ),
+        alignment: Alignment.center,
+        child: isLoading
+            ? CircularProgressIndicator(
+                backgroundColor: AppColors.purpleDark,
               )
-            : GridView.builder(
-                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                    crossAxisSpacing: 5,
-                    mainAxisSpacing: 5,
-                    maxCrossAxisExtent: width <= 300
-                        ? width
-                        : width < 600
-                            ? width * 0.5
-                            : width < 900
-                                ? width * 0.3333
-                                : width * 0.25),
-                itemCount: objectImages.length,
-                itemBuilder: (context, index) => ImageItem(
-                      id: objectImages[index].imageId,
-                      foregroundColor: imagesToDeleteIds
-                              .contains(objectImages[index].imageId)
-                          ? AppColors.purpleNormal.withOpacity(.4)
-                          : Colors.transparent,
-                      onLongPress: () {
-                        //if the list of ids contains the id of this element we remove it , else we add it rather;
-                        setState(() {
-                          if (imagesToDeleteIds
-                              .contains(objectImages[index].imageId))
-                            imagesToDeleteIds
-                                .remove(objectImages[index].imageId);
-                          else
-                            imagesToDeleteIds.add(objectImages[index].imageId);
+            : objectImages.isEmpty
+                ? Center(
+                    child: Text(
+                      Languages.noImages[isFrench ? Config.fr : Config.en],
+                      style: Styles.purpleTextLarge,
+                      textAlign: TextAlign.center,
+                    ),
+                  )
+                : GridView.builder(
+                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                        crossAxisSpacing: 5,
+                        mainAxisSpacing: 5,
+                        maxCrossAxisExtent: width <= 300
+                            ? width
+                            : width < 600
+                                ? width * 0.5
+                                : width < 900
+                                    ? width * 0.3333
+                                    : width * 0.25),
+                    itemCount: objectImages.length,
+                    itemBuilder: (context, index) => ImageItem(
+                          id: objectImages[index].imageId,
+                          foregroundColor: imagesToDeleteIds
+                                  .contains(objectImages[index].imageId)
+                              ? AppColors.purpleNormal.withOpacity(.4)
+                              : Colors.transparent,
+                          onLongPress: () {
+                            //if the list of ids contains the id of this element we remove it , else we add it rather;
+                            setState(() {
+                              if (imagesToDeleteIds
+                                  .contains(objectImages[index].imageId))
+                                imagesToDeleteIds
+                                    .remove(objectImages[index].imageId);
+                              else
+                                imagesToDeleteIds
+                                    .add(objectImages[index].imageId);
 
-                          canDelete = imagesToDeleteIds.isNotEmpty;
-                        });
-                      },
-                      name: objectImages[index].name,
-                      file: objectImages[index].path,
-                      caption: objectImages[index].name,
-                      onTap: () async {
-                        if (canDelete) {
-                          //if the list of ids contains the id of this element we remove it , else we add it rather;
-                          setState(() {
-                            if (imagesToDeleteIds
-                                .contains(objectImages[index].imageId))
-                              imagesToDeleteIds
-                                  .remove(objectImages[index].imageId);
-                            else
-                              imagesToDeleteIds
-                                  .add(objectImages[index].imageId);
+                              canDelete = imagesToDeleteIds.isNotEmpty;
+                            });
+                          },
+                          name: objectImages[index].name,
+                          file: objectImages[index].path,
+                          caption: objectImages[index].name,
+                          onTap: () async {
+                            if (canDelete) {
+                              //if the list of ids contains the id of this element we remove it , else we add it rather;
+                              setState(() {
+                                if (imagesToDeleteIds
+                                    .contains(objectImages[index].imageId))
+                                  imagesToDeleteIds
+                                      .remove(objectImages[index].imageId);
+                                else
+                                  imagesToDeleteIds
+                                      .add(objectImages[index].imageId);
 
-                            canDelete = imagesToDeleteIds.isNotEmpty;
-                          });
-                        } else
-                          Navigator.of(context).push(MaterialPageRoute(
-                              builder: (context) => ImageScreen(
-                                    objectName: widget.objectName,
-                                    imagePath: objectImages[index].path,
-                                    objectId: widget.objectId,
-                                    settings: widget.settings,
-                                    moduleName: widget.moduleName,
-                                    image: objectImages[index],
-                                  )));
-                      },
-                    )),
+                                canDelete = imagesToDeleteIds.isNotEmpty;
+                              });
+                            } else
+                              Navigator.of(context).push(MaterialPageRoute(
+                                  builder: (context) => ImageScreen(
+                                        objectName: widget.objectName,
+                                        imagePath: objectImages[index].path,
+                                        objectId: widget.objectId,
+                                        settings: widget.settings,
+                                        moduleName: widget.moduleName,
+                                        image: objectImages[index],
+                                      )));
+                          },
+                        )),
       )),
     );
   }

@@ -6,6 +6,7 @@ import 'package:new_bluebyte/components/purpleButton.dart';
 import 'package:new_bluebyte/database/dbOps.dart';
 import 'package:new_bluebyte/models/newImageModel.dart';
 import 'package:new_bluebyte/models/pointsModel.dart';
+import 'package:new_bluebyte/provider/editStream.dart';
 import 'package:new_bluebyte/screens/ImageScreen/imageScreen.dart';
 import 'package:new_bluebyte/utils/angleCalculator.dart';
 import 'package:new_bluebyte/utils/colors&fonts.dart';
@@ -34,6 +35,7 @@ class PointCollector {
       @required this.image,
       @required this.imagePath,
       @required this.moduleName,
+      @required this.editService,
       @required this.widgetState}) {
     this.counter = 0;
     this.points = [];
@@ -51,13 +53,14 @@ class PointCollector {
   bool isFrench;
   AppSettings settings;
   int counter;
-  State widgetState;
+  ImageScreenState widgetState;
   int numberOfAddedItems;
   final ObjectImage image;
   final String objectName;
   final String imagePath;
   final String moduleName;
   final int objectId;
+  EditStreamService editService;
 
   ///This method sets the point mode to [newMode]
   ///if the mode is different from the current one its resets all the points we have
@@ -371,8 +374,18 @@ class PointCollector {
         );
       } else if ((points.length <= 3 && pointMode == PointMode.Angle)) {
         return Positioned(
-          left: points[points.length == 1 ? 0 : points.length == 2 ? 1 : 2].dx,
-          top: points[points.length == 1 ? 0 : points.length == 2 ? 1 : 2].dy,
+          left: points[points.length == 1
+                  ? 0
+                  : points.length == 2
+                      ? 1
+                      : 2]
+              .dx,
+          top: points[points.length == 1
+                  ? 0
+                  : points.length == 2
+                      ? 1
+                      : 2]
+              .dy,
           child: Container(
             padding: EdgeInsets.all(radius),
             decoration: BoxDecoration(shape: BoxShape.circle, color: color),
@@ -392,8 +405,8 @@ class PointCollector {
     final lengthPoints = await DbOperations.getLengthPoints(imageId);
     final anglePoints = await DbOperations.getAnglePoints(imageId);
 
-    print(
-        "There are ${lengthPoints.length} length points and ${anglePoints.length} angle points");
+    // print(
+    //     "There are ${lengthPoints.length} length points and ${anglePoints.length} angle points");
 
     points = [];
     // objectStack = [];
@@ -436,11 +449,14 @@ class PointCollector {
               onTap: () {
                 print("line  was pressed");
               },
-              onLongPress: () async {
-                var result = await showDialog(
-                    context: context,
+              onLongPress: () {
+                showDialog(
+                    context: widgetState != null
+                        ? widgetState.scaffoldKey.currentContext
+                        : null,
                     builder: (context) {
-                      return new EditDialog(context,
+                      return new EditDialog(
+                          widgetState.scaffoldKey.currentContext,
                           pointType: PointMode.Length,
                           isFrench: isFrench,
                           anglePoints: null,
@@ -450,19 +466,10 @@ class PointCollector {
                           state: widgetState,
                           lineOrAngleId: object.lineObject.pointsId);
                     });
-                print("result is $result");
-                if (result != null) {
-                  Navigator.of(context).pushReplacement(MaterialPageRoute(
-                      builder: (context) => ImageScreen(
-                            objectName: objectName,
-                            objectId: objectId,
-                            pointControllerState: this,
-                            image: image,
-                            imagePath: imagePath,
-                            settings: settings,
-                            moduleName: moduleName,
-                          )));
-                }
+                // print("result is $result");
+                // if (result != null) {
+                //   //dialog successfully closed
+                // }
               },
               child: Text(
                 object.lineObject.length.toString() + object.lineObject.unit ??
@@ -476,26 +483,28 @@ class PointCollector {
       } else if (object.objectType == ObjectStackItemType.Angle) {
         final firstPoint = Offset(
             object.angleObject.firstpointX, object.angleObject.firstpointY);
-        // final secondPoint = Offset(
-        //     object.angleObject.secondpointX, object.angleObject.secondpointY);
+        final secondPoint = Offset(
+            object.angleObject.secondpointX, object.angleObject.secondpointY);
         final thirdPoint = Offset(
             object.angleObject.thirdpointX, object.angleObject.thirdpointY);
+
+        Offset labMid1 = midPoint(firstPoint, thirdPoint);
+        labMid1 = midPoint(secondPoint, labMid1);
         objectStack.add(Positioned(
-          top: midPoint(firstPoint, thirdPoint).dy - 10,
-          left: midPoint(firstPoint, thirdPoint).dx - 10,
+          top: labMid1.dy,
+          left: labMid1.dx,
           child: InkWell(
               onTap: () {
-                print("line  was pressed");
+                print("angle  was pressed");
               },
-              onLongPress: () async {
-                // for(int i =0;i<this.counter;i++){
-                //   this.removeLastPoint();
-                // }
+              onLongPress: () {
                 //implement angle edit dialog
-                var result = await showDialog(
-                    context: context,
+                showDialog(
+                    context: widgetState != null
+                        ? widgetState.scaffoldKey.currentContext
+                        : null,
                     builder: (context) {
-                      return new EditDialog(context,
+                      return EditDialog(widgetState.scaffoldKey.currentContext,
                           pointType: PointMode.Angle,
                           isFrench: isFrench,
                           anglePoints: object.angleObject,
@@ -505,22 +514,6 @@ class PointCollector {
                           state: widgetState,
                           lineOrAngleId: object.angleObject.pointsId);
                     });
-                print("result is $result");
-                if (result != null) {
-                
-                  if (this.widgetState.mounted)
-                    this.widgetState.setState(() {});
-                  // Navigator.of(context).pushReplacement(MaterialPageRoute(
-                  //     builder: (context) => ImageScreen(
-                  //           objectName: objectName,
-                  //           objectId: objectId,
-                  //           pointControllerState: this,
-                  //           image: image,
-                  //           imagePath: imagePath,
-                  //           settings: settings,
-                  //           moduleName: moduleName,
-                  //         )));
-                }
               },
               child: Text(
                 object.angleObject.angle.toString() + "°" ?? "value",

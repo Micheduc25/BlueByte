@@ -12,6 +12,7 @@ import 'package:new_bluebyte/provider/modulesProvider.dart';
 
 import 'package:new_bluebyte/screens/AudioRecordScreen/audioRecordScreen.dart';
 import 'package:new_bluebyte/screens/ModuleScreen/audioView.dart';
+import 'package:new_bluebyte/screens/ModuleScreen/exportScreen.dart';
 import 'package:new_bluebyte/screens/ModuleScreen/objectsView.dart';
 import 'package:new_bluebyte/screens/objectImagesScreen/objectImagesScreen.dart';
 import 'package:new_bluebyte/utils/alertDialog.dart';
@@ -108,6 +109,9 @@ class _ModuleScreenState extends State<ModuleScreen>
             ),
             onTap: () {
               //total module export here
+              Navigator.of(context).push(MaterialPageRoute(
+                  builder: (context) => ExportScreen(
+                      module: widget.module, settings: widget.settings)));
             },
           ),
           PopupMenuButton(

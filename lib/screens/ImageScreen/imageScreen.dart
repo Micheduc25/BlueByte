@@ -9,6 +9,7 @@ import 'package:new_bluebyte/components/pointMode.dart';
 import 'package:new_bluebyte/components/purpleButton.dart';
 import 'package:new_bluebyte/database/dbOps.dart';
 import 'package:new_bluebyte/models/newImageModel.dart';
+import 'package:new_bluebyte/provider/editStream.dart';
 
 import 'package:new_bluebyte/screens/SettingsScreen/settings_image.dart';
 
@@ -43,10 +44,10 @@ class ImageScreen extends StatefulWidget {
   final PointCollector pointControllerState;
 
   @override
-  _ImageScreenState createState() => _ImageScreenState();
+  ImageScreenState createState() => ImageScreenState();
 }
 
-class _ImageScreenState extends State<ImageScreen> {
+class ImageScreenState extends State<ImageScreen> {
   bool showActions;
   PointMode pointMode;
   TextEditingController nameController;
@@ -68,6 +69,10 @@ class _ImageScreenState extends State<ImageScreen> {
   TextEditingController screenshotController;
   bool canExport;
   GlobalKey paintKey = new GlobalKey();
+  GlobalKey<ScaffoldState> scaffoldKey = new GlobalKey<ScaffoldState>();
+  EditStreamService editService = EditStreamService();
+  StreamSubscription editSubscription;
+  // bool isEdited = false;
 
   @override
   void initState() {
@@ -91,6 +96,7 @@ class _ImageScreenState extends State<ImageScreen> {
             imagePath: widget.imagePath,
             image: widget.image,
             moduleName: widget.moduleName,
+            editService: editService,
             widgetState: this);
 
     lineWidth = widget.settings.lineWidth.getValue();
@@ -123,6 +129,16 @@ class _ImageScreenState extends State<ImageScreen> {
       }
     });
 
+    editService.onEditData.listen((event) {
+      if (event == true) {
+        Navigator.of(context, rootNavigator: true).pop(event);
+
+        setState(() {
+          // isEdited = true;
+        });
+      }
+    });
+
     Future.delayed(Duration.zero, () {
       pointController.loadPoints(context).then((_) {
         setState(() {
@@ -133,30 +149,39 @@ class _ImageScreenState extends State<ImageScreen> {
     super.initState();
   }
 
-  @override
   void dispose() {
+    print("in dispose here!");
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight
     ]);
-    lineWidthSubs.cancel();
-    lineColorSubs.cancel();
-    bgColorSubs.cancel();
+    lineWidthSubs?.cancel();
+    lineColorSubs?.cancel();
+    bgColorSubs?.cancel();
+    editSubscription?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final isFrench = widget.settings.globalLanguage.getValue() == Config.fr;
-    return RepaintBoundary(
-      key: paintKey,
-      child: Scaffold(
-        // backgroundColor: AppColors.purpleNormal,
-        resizeToAvoidBottomInset: false,
-
-        body: SafeArea(
+    if (MediaQuery.of(context).orientation != Orientation.landscape) {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight
+      ]).then((_) {
+        print("Orientation set in build method");
+      });
+    }
+    return Scaffold(
+      // backgroundColor: AppColors.purpleNormal,
+      resizeToAvoidBottomInset: false,
+      key: scaffoldKey,
+      body: RepaintBoundary(
+        key: paintKey,
+        child: SafeArea(
           top: canExport ? false : true,
           child: Center(
             child: GestureDetector(
@@ -366,9 +391,9 @@ class _ImageScreenState extends State<ImageScreen> {
                                           ? Languages.length[
                                               isFrench ? Config.fr : Config.en]
                                           : "Angle",
-                                      icon: pointMode == PointMode.Angle
-                                          ? Icons.panorama_wide_angle
-                                          : Icons.linear_scale,
+                                      image: pointMode == PointMode.Angle
+                                          ? 'assets/images/angle.png'
+                                          : 'assets/images/line.png',
                                       onPressed: () {
                                         if (pointMode == PointMode.Length) {
                                           pointController
@@ -390,10 +415,11 @@ class _ImageScreenState extends State<ImageScreen> {
                                       icon: Icons.add,
                                       onPressed: () async {
                                         await showDialog(
-                                            context: context,
+                                            context: scaffoldKey.currentContext,
                                             builder: (context) => Dialog(
                                                 child: InfoGetter(
-                                                    context: context,
+                                                    context: scaffoldKey
+                                                        .currentContext,
                                                     isFrench: isFrench,
                                                     lang: widget
                                                         .settings.globalLanguage
@@ -541,7 +567,8 @@ class _ImageScreenState extends State<ImageScreen> {
       IconData icon,
       Color iconColor = Colors.white,
       double iconSize = 30,
-      bool orderVertical = false}) {
+      bool orderVertical = false,
+      String image}) {
     return TextButton(
         style: ButtonStyle(
             padding: MaterialStateProperty.all(EdgeInsets.all(10)),
@@ -551,11 +578,13 @@ class _ImageScreenState extends State<ImageScreen> {
         child: !orderVertical
             ? Row(
                 children: <Widget>[
-                  Icon(
-                    icon,
-                    color: iconColor,
-                    size: 30,
-                  ),
+                  image == null
+                      ? Icon(
+                          icon,
+                          color: iconColor,
+                          size: 30,
+                        )
+                      : Image.asset(image),
                   SizedBox(
                     width: 10,
                   ),
@@ -571,11 +600,13 @@ class _ImageScreenState extends State<ImageScreen> {
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
-                  Icon(
-                    icon,
-                    color: iconColor,
-                    size: 30,
-                  ),
+                  image == null
+                      ? Icon(
+                          icon,
+                          color: iconColor,
+                          size: 30,
+                        )
+                      : Image.asset(image),
                   SizedBox(
                     height: 5,
                   ),

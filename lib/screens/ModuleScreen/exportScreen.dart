@@ -48,12 +48,13 @@ class _ExportScreenState extends State<ExportScreen> {
   int totalAudios = 0;
   int imageCount = 0;
   int audioCount = 0;
+  bool _canSnap = false;
   @override
   void initState() {
     super.initState();
 
-    Future.delayed(Duration.zero, () async {
-      bool isFrench = widget.settings.globalLanguage.getValue() == Config.fr;
+    Future.delayed(Duration(milliseconds: 1000), () async {
+      // bool isFrench = widget.settings.globalLanguage.getValue() == Config.fr;
       await SystemChrome.setPreferredOrientations(
           [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
       //Exportation done here
@@ -81,7 +82,7 @@ class _ExportScreenState extends State<ExportScreen> {
       //////////////////////////////////////////////////////////////////////////
 
       //we create the directory in which the project will be exported
-
+      final appDir = Directory("storage/emulated/0/BlueByte");
       final moduleDirectory =
           Directory('storage/emulated/0/BlueByte/${widget.module.name}');
       Directory objectsDirectory =
@@ -102,12 +103,12 @@ class _ExportScreenState extends State<ExportScreen> {
       }
 
       if (!await objectsDirectory.exists()) {
-        await objectsDirectory.create(recursive: true);
+        await objectsDirectory.create(recursive: false);
       }
       if (await audiosDirectory.exists()) {
         await audiosDirectory.delete(recursive: true);
       }
-      await audiosDirectory.create(recursive: true);
+      await audiosDirectory.create(recursive: false);
 
       ////////////////////////////////////////////////////////////////////////
 
@@ -124,6 +125,7 @@ class _ExportScreenState extends State<ExportScreen> {
 
         for (int j = 0; j < objectImages[_currentObject.objectId].length; j++) {
           _currentImage = objectImages[_currentObject.objectId][j];
+          print('image path: ${_currentImage.path}');
           pointController = PointCollector(
               PointMode.Length, _currentImage.imageId, true, widget.settings,
               objectId: _currentObject.objectId,
@@ -131,16 +133,18 @@ class _ExportScreenState extends State<ExportScreen> {
               image: _currentImage,
               imagePath: _currentImage.path,
               moduleName: widget.module.name,
-              widgetState: this);
+              editService: null,
+              widgetState: null);
 
           //after initializing the points controller we load all the points for the current image
           await pointController.loadPoints(context);
 
           setState(() {});
 
-          await Future.delayed(Duration(milliseconds: 50), () async {
+          await Future.delayed(Duration(milliseconds: 400), () async {
             //we then take a screenshot and move to the next image
             /////////////////////////////////////////////////////////////////////////////
+
             final finalPath =
                 path.join(imDir.path, "${_currentImage.name}.png");
 
@@ -150,18 +154,27 @@ class _ExportScreenState extends State<ExportScreen> {
             var byteData = await image.toByteData(format: ImageByteFormat.png);
             var pngBytes = byteData.buffer.asUint8List();
 
+            print("before file creation");
             File imgFile = new File("$finalPath");
-            if (await imgFile.exists()) imgFile.delete(recursive: true);
-            imgFile.create(recursive: true);
-            imgFile.writeAsBytes(pngBytes);
-            ////////////////////////////////////////////////////////////////////////////
-            imageCount++;
+            // if (await imgFile.exists()) imgFile.delete();
+            // imgFile.create(recursive: true);
+            try {
+              imgFile.writeAsBytes(pngBytes);
+              imageCount++;
 
-            setState(() {
-              progress =
-                  (((imageCount + audioCount) / (totalImages + totalAudios)) *
-                      100);
-            });
+              setState(() {
+                progress =
+                    (((imageCount + audioCount) / (totalImages + totalAudios)) *
+                        100);
+              });
+            } catch (err) {
+              if (err is FileSystemException) {
+                print('we don catch am ohhh');
+              }
+
+              print("error:$err");
+            }
+            ////////////////////////////////////////////////////////////////////////////
           });
         }
       }
@@ -205,8 +218,7 @@ class _ExportScreenState extends State<ExportScreen> {
       }
 
       //after exportation we zip the file
-      final zipFile =
-          File(path.join(moduleDirectory.path, '${widget.module.name}.zip'));
+      final zipFile = File(path.join(appDir.path, '${widget.module.name}.zip'));
       if (await zipFile.exists()) await zipFile.delete(recursive: true);
       await ZipFile.createFromDirectory(
         sourceDir: moduleDirectory,
@@ -256,8 +268,10 @@ class _ExportScreenState extends State<ExportScreen> {
                             Stack(
                               fit: StackFit.expand,
                               children: [
-                                Image.file(
-                                  File(_currentImage.path),
+                                Image(
+                                  image: FileImage(
+                                    File(_currentImage.path),
+                                  ),
                                   fit: BoxFit.contain,
                                 ),
                                 ObjectsPainter(

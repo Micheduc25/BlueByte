@@ -46,3 +46,7 @@ double angleBetweenTwoLines(Offset p1, Offset p2, Offset p3, Offset p4) {
   final angle = atan(val.abs());
   return angle;
 }
+
+double lineLength(Offset p1, Offset p2) {
+  return sqrt(pow(p2.dx - p1.dx, 2) + pow(p2.dy - p1.dy, 2));
+}
