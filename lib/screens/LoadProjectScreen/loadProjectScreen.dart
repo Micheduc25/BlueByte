@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:new_bluebyte/components/exitDialog.dart';
+import 'package:new_bluebyte/components/purpleButton.dart';
 import 'package:new_bluebyte/models/moduleModel.dart';
 import 'package:new_bluebyte/provider/modulesProvider.dart';
 import 'package:new_bluebyte/screens/ModuleScreen/exportScreen.dart';
@@ -14,6 +16,7 @@ import 'package:new_bluebyte/utils/colors&fonts.dart';
 import 'package:new_bluebyte/utils/config.dart';
 import 'package:new_bluebyte/utils/languages.dart';
 import 'package:new_bluebyte/utils/settings.dart';
+import 'package:new_bluebyte/utils/specialFunctions.dart';
 import 'package:new_bluebyte/utils/styles.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -34,6 +37,7 @@ class _LoadProjectScreenState extends State<LoadProjectScreen> {
   StreamSubscription languageSubs;
   String language;
   String filterKey;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -70,6 +74,100 @@ class _LoadProjectScreenState extends State<LoadProjectScreen> {
             scrollDirection: Axis.horizontal,
             child:
                 Text(Languages.loadProject[isFrench ? Config.fr : Config.en])),
+        actions: [
+          Tooltip(
+            message: Languages.saveSession[isFrench ? Config.fr : Config.en],
+            child: InkWell(
+              child: Padding(
+                padding: EdgeInsets.all(5),
+                child: Icon(
+                  Icons.save,
+                  color: Colors.white,
+                ),
+              ),
+              onTap: () async {
+                bool result = await showDialog<bool>(
+                    context: context,
+                    builder: (context) {
+                      return AlertDialog(
+                        title: Text(Languages
+                            .saveSession[isFrench ? Config.fr : Config.en]),
+                        content: Text(Languages.saveSessionMessage[
+                            isFrench ? Config.fr : Config.en]),
+                        actions: [
+                          PurpleButton(
+                            label:
+                                Languages.no[isFrench ? Config.fr : Config.en],
+                            onPressed: () {
+                              Navigator.of(context).pop(false);
+                            },
+                          ),
+                          PurpleButton(
+                            label:
+                                Languages.yes[isFrench ? Config.fr : Config.en],
+                            onPressed: () {
+                              Navigator.of(context).pop(true);
+                            },
+                          )
+                        ],
+                      );
+                    });
+
+                if (result == true) {
+                  setState(() {
+                    _isLoading = true;
+                  });
+
+                  try {
+                    await SpecialFunctions.saveWork();
+
+                    Fluttertoast.showToast(msg: 'sauvegarde complète');
+                  } catch (err) {
+                    Fluttertoast.showToast(msg: 'error:$err');
+                  } finally {
+                    setState(() {
+                      _isLoading = false;
+                    });
+                  }
+                }
+              },
+            ),
+          ),
+          Tooltip(
+            message: "Charger une session",
+            child: InkWell(
+              child: Padding(
+                padding: EdgeInsets.all(5),
+                child: Icon(
+                  Icons.drive_folder_upload,
+                  color: Colors.white,
+                ),
+              ),
+              onTap: () async {
+                await SpecialFunctions.loadWork(() {
+                  setState(() {
+                    _isLoading = true;
+                  });
+                }, () async {
+                  allModules =
+                      await Provider.of<ModulesProvider>(context, listen: false)
+                          .getModules();
+
+                  setState(() {
+                    _isLoading = false;
+                  });
+
+                  Fluttertoast.showToast(msg: 'Travail chargé avec succès');
+                }, (message) {
+                  setState(() {
+                    _isLoading = false;
+                  });
+                  Fluttertoast.showToast(msg: message);
+                });
+              },
+            ),
+          )
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -188,131 +286,157 @@ class _LoadProjectScreenState extends State<LoadProjectScreen> {
         ),
       ),
       body: Center(
-        child: Container(
-            child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            Padding(
-              padding: EdgeInsets.all(5),
-              child: SizedBox(
-                width: MediaQuery.of(context).size.width * 0.7,
-                child: TextField(
-                  controller: searchController,
-                  cursorColor: AppColors.purpleNormal,
-                  decoration: InputDecoration(
-                      prefixIcon: Icon(
-                        Icons.search,
-                        color: AppColors.purpleNormal,
+        child: _isLoading
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(Languages.loading[isFrench ? Config.fr : Config.en]),
+                  SizedBox(
+                    height: 20,
+                  ),
+                  CircularProgressIndicator(
+                    backgroundColor: AppColors.purpleDark,
+                  ),
+                ],
+              )
+            : Container(
+                child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  Padding(
+                    padding: EdgeInsets.all(5),
+                    child: SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.7,
+                      child: TextField(
+                        controller: searchController,
+                        cursorColor: AppColors.purpleNormal,
+                        decoration: InputDecoration(
+                            prefixIcon: Icon(
+                              Icons.search,
+                              color: AppColors.purpleNormal,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                    width: 3, color: AppColors.purpleDark)),
+                            enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                    width: 2, color: AppColors.purpleDark)),
+                            hintText: Languages
+                                .searchModule[isFrench ? Config.fr : Config.en],
+                            hintStyle: TextStyle(
+                              color: AppColors.purpleLight,
+                              fontSize: 18,
+                            )),
+                        onChanged: (text) {
+                          setState(() {
+                            filterKey = text;
+                          });
+                        },
                       ),
-                      focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                              width: 3, color: AppColors.purpleDark)),
-                      enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                              width: 2, color: AppColors.purpleDark)),
-                      hintText: Languages
-                          .searchModule[isFrench ? Config.fr : Config.en],
-                      hintStyle: TextStyle(
-                        color: AppColors.purpleLight,
-                        fontSize: 18,
-                      )),
-                  onChanged: (text) {
-                    setState(() {
-                      filterKey = text;
-                    });
-                  },
-                ),
-              ),
-            ),
-            Expanded(
-              child: FutureBuilder(
-                future: Provider.of<ModulesProvider>(context)
-                    .getModules(filterKey: filterKey),
-                builder: (context, AsyncSnapshot<List<Module>> snapshot) {
-                  if (snapshot.connectionState == ConnectionState.done) {
-                    allModules = snapshot.data;
+                    ),
+                  ),
+                  Expanded(
+                    child: FutureBuilder(
+                      future: Provider.of<ModulesProvider>(context)
+                          .getModules(filterKey: filterKey),
+                      builder: (context, AsyncSnapshot<List<Module>> snapshot) {
+                        if (snapshot.connectionState == ConnectionState.done) {
+                          allModules = snapshot.data;
 
-                    if (allModules.isEmpty)
-                      return Center(
-                        child: Text(
-                          Languages.noModules[isFrench ? Config.fr : Config.en],
-                          style: Styles.purpleTextLarge,
-                          textAlign: TextAlign.center,
-                        ),
-                      );
-                    return ListView.builder(
-                        itemCount: allModules.length,
-                        itemBuilder: (context, index) {
-                          return Column(
-                            children: <Widget>[
-                              Slidable(
-                                child: ListTile(
-                                  leading: Icon(
-                                    Icons.folder,
-                                    color: AppColors.purpleNormal,
-                                    size: 25,
-                                  ),
-                                  title: Text(
-                                    allModules[index].name,
-                                    style: Styles.purpleTextNormal,
-                                  ),
-                                  trailing: Text(
-                                    allModules[index].creationDate,
-                                    style: TextStyle(
-                                        color: AppColors.purpleLight,
-                                        fontSize: 14),
-                                  ),
-                                  onTap: () {
-                                    Navigator.of(context)
-                                        .push(MaterialPageRoute(
-                                            builder: (context) => ModuleScreen(
-                                                  isFrench: isFrench,
-                                                  module: allModules[index],
-                                                  settings: widget.settings,
-                                                )));
-                                  },
-                                ),
-                                actionPane: SlidableScrollActionPane(),
-                                actionExtentRatio: 1 / 2,
-                                actions: [
-                                  IconSlideAction(
-                                    icon: Icons.import_export,
-                                    caption: Languages.export[
-                                        isFrench ? Config.fr : Config.en],
-                                    color: AppColors.purpleDark,
-                                    foregroundColor: Colors.white,
-                                    closeOnTap: false,
-                                    onTap: () {
-                                      Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                              builder: (context) =>
-                                                  ExportScreen(
-                                                      module: allModules[index],
-                                                      settings:
-                                                          widget.settings)));
-                                    },
-                                  ),
-                                ],
+                          if (allModules.isEmpty)
+                            return Center(
+                              child: Text(
+                                Languages.noModules[
+                                    isFrench ? Config.fr : Config.en],
+                                style: Styles.purpleTextLarge,
+                                textAlign: TextAlign.center,
                               ),
-                              Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 5),
-                                child: Divider(
-                                  height: 4,
-                                  color: AppColors.purpleNormal,
-                                  thickness: 1,
-                                ),
-                              )
-                            ],
+                            );
+                          return ListView.builder(
+                              itemCount: allModules.length,
+                              itemBuilder: (context, index) {
+                                return Column(
+                                  children: <Widget>[
+                                    Slidable(
+                                      child: ListTile(
+                                        leading: Icon(
+                                          Icons.folder,
+                                          color: AppColors.purpleNormal,
+                                          size: 25,
+                                        ),
+                                        title: Text(
+                                          allModules[index].name,
+                                          style: Styles.purpleTextNormal,
+                                        ),
+                                        trailing: Text(
+                                          allModules[index].creationDate,
+                                          style: TextStyle(
+                                              color: AppColors.purpleLight,
+                                              fontSize: 14),
+                                        ),
+                                        onTap: () {
+                                          Navigator.of(context).push(
+                                              MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      ModuleScreen(
+                                                        isFrench: isFrench,
+                                                        module:
+                                                            allModules[index],
+                                                        settings:
+                                                            widget.settings,
+                                                      )));
+                                        },
+                                      ),
+                                      actionPane: SlidableScrollActionPane(),
+                                      actionExtentRatio: 1 / 3,
+                                      actions: [
+                                        IconSlideAction(
+                                          icon: Icons.import_export,
+                                          caption: Languages.export[
+                                              isFrench ? Config.fr : Config.en],
+                                          color: AppColors.purpleDark,
+                                          foregroundColor: Colors.white,
+                                          closeOnTap: false,
+                                          onTap: () {
+                                            Navigator.of(context).push(
+                                                MaterialPageRoute(
+                                                    builder: (context) =>
+                                                        ExportScreen(
+                                                            module: allModules[
+                                                                index],
+                                                            settings: widget
+                                                                .settings)));
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                    Padding(
+                                      padding:
+                                          EdgeInsets.symmetric(horizontal: 5),
+                                      child: Divider(
+                                        height: 4,
+                                        color: AppColors.purpleNormal,
+                                        thickness: 1,
+                                      ),
+                                    )
+                                  ],
+                                );
+                              });
+                        } else if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return Center(
+                            child: CircularProgressIndicator(
+                              backgroundColor: AppColors.purpleDark,
+                            ),
                           );
-                        });
-                  } else {
-                    return Container();
-                  }
-                },
-              ),
-            )
-          ],
-        )),
+                        } else
+                          return Container();
+                      },
+                    ),
+                  )
+                ],
+              )),
       ),
     );
   }

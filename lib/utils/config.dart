@@ -51,6 +51,8 @@ class Config {
   static String lineColor = "lineColor";
   static String lineWidth = "lineWidth";
   static String width = "width";
-  
+
   static String unit = "unit";
+
+  static String dbName = "bluebyte.db";
 }

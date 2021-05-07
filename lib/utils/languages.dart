@@ -254,4 +254,22 @@ class Languages {
   };
 
   static Map help = {Config.fr: "Aide", Config.en: "Help"};
+
+  static Map loading = {Config.fr: "Chargement", Config.en: "Loading"};
+  static Map saveSession = {
+    Config.fr: "Sauvegarder Session",
+    Config.en: "Save Session"
+  };
+  static Map saveSessionMessage = {
+    Config.fr: "Voulez vous sauvegarder cette session?",
+    Config.en: "Do you want to save this session?"
+  };
+  static Map loadSession = {
+    Config.fr: "Charger Session",
+    Config.en: "Load Session"
+  };
+  static Map loadSessionMessage = {
+    Config.fr: "Voulez vous charger cette session?",
+    Config.en: "Do you want to load this session?"
+  };
 }

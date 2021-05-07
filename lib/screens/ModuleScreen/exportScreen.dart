@@ -40,7 +40,7 @@ class _ExportScreenState extends State<ExportScreen> {
   List<Audio> moduleAudios;
   PointCollector pointController;
 
-  bool _isLoading = true;
+  // bool _isLoading = true;
   ObjectImage _currentImage;
   Object _currentObject;
   double progress = 0;
@@ -49,6 +49,7 @@ class _ExportScreenState extends State<ExportScreen> {
   int imageCount = 0;
   int audioCount = 0;
   bool _canSnap = false;
+  Map<int, File> imageFiles = {};
   @override
   void initState() {
     super.initState();
@@ -69,11 +70,12 @@ class _ExportScreenState extends State<ExportScreen> {
       Map<int, List<ObjectImage>> objectImages = {};
 
       for (int i = 0; i < moduleObjects.length; i++) {
-        objectImages[moduleObjects[i].moduleId] =
-            await imagesProvider.getImages(moduleObjects[i].moduleId);
+        objectImages[moduleObjects[i].objectId] =
+            await imagesProvider.getImages(moduleObjects[i].objectId);
 
-        totalImages += objectImages[moduleObjects[i].moduleId].length;
+        totalImages += objectImages[moduleObjects[i].objectId].length;
       }
+
       totalAudios = moduleAudios.length;
 
       /////////////////////////////////////////////////////////////////////////////
@@ -125,7 +127,8 @@ class _ExportScreenState extends State<ExportScreen> {
 
         for (int j = 0; j < objectImages[_currentObject.objectId].length; j++) {
           _currentImage = objectImages[_currentObject.objectId][j];
-          print('image path: ${_currentImage.path}');
+          imageFiles.addAll({_currentImage.imageId: File(_currentImage.path)});
+
           pointController = PointCollector(
               PointMode.Length, _currentImage.imageId, true, widget.settings,
               objectId: _currentObject.objectId,
@@ -141,7 +144,7 @@ class _ExportScreenState extends State<ExportScreen> {
 
           setState(() {});
 
-          await Future.delayed(Duration(milliseconds: 400), () async {
+          await Future.delayed(Duration(milliseconds: 1500), () async {
             //we then take a screenshot and move to the next image
             /////////////////////////////////////////////////////////////////////////////
 
@@ -154,13 +157,15 @@ class _ExportScreenState extends State<ExportScreen> {
             var byteData = await image.toByteData(format: ImageByteFormat.png);
             var pngBytes = byteData.buffer.asUint8List();
 
-            print("before file creation");
-            File imgFile = new File("$finalPath");
-            // if (await imgFile.exists()) imgFile.delete();
-            // imgFile.create(recursive: true);
             try {
-              imgFile.writeAsBytes(pngBytes);
+              print("before file creation");
+              File imgFile = new File("$finalPath");
+              // if (await imgFile.exists()) imgFile.delete();
+              // imgFile.create(recursive: true);
+
               imageCount++;
+
+              imgFile.writeAsBytes(pngBytes);
 
               setState(() {
                 progress =
@@ -169,7 +174,7 @@ class _ExportScreenState extends State<ExportScreen> {
               });
             } catch (err) {
               if (err is FileSystemException) {
-                print('we don catch am ohhh');
+                print('fileSystemException:$err');
               }
 
               print("error:$err");
@@ -270,9 +275,41 @@ class _ExportScreenState extends State<ExportScreen> {
                               children: [
                                 Image(
                                   image: FileImage(
-                                    File(_currentImage.path),
+                                    imageFiles[_currentImage.imageId],
                                   ),
                                   fit: BoxFit.contain,
+                                  // filterQuality: FilterQuality.high,
+                                  loadingBuilder:
+                                      (context, child, loadingProgress) {
+                                    if (loadingProgress == null)
+                                      return child;
+                                    else {
+                                      print(loadingProgress
+                                          .cumulativeBytesLoaded);
+                                      if ((loadingProgress
+                                                  .cumulativeBytesLoaded /
+                                              loadingProgress
+                                                  .expectedTotalBytes) >=
+                                          1) {
+                                        setState(() {
+                                          _canSnap = true;
+                                          print('can snap changed ohhh!');
+                                        });
+                                        return child;
+                                      } else {
+                                        setState(() {
+                                          if (_canSnap) _canSnap = false;
+                                        });
+                                        return CircularProgressIndicator(
+                                          backgroundColor: AppColors.purpleDark,
+                                          value: loadingProgress
+                                                  .cumulativeBytesLoaded /
+                                              loadingProgress
+                                                  .expectedTotalBytes,
+                                        );
+                                      }
+                                    }
+                                  },
                                 ),
                                 ObjectsPainter(
                                     context: context,

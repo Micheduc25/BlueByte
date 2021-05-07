@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:new_bluebyte/components/inputItem.dart';
 import 'package:new_bluebyte/components/purpleButton.dart';
@@ -120,6 +121,8 @@ class _InfoGetterState extends State<InfoGetter> {
                       source: imageSource == Config.camera
                           ? picker.ImageSource.camera
                           : picker.ImageSource.gallery);
+
+                  print('picked filed is $pickedFile');
 
                   if (pickedFile != null) {
                     imageFile = File(pickedFile.path);

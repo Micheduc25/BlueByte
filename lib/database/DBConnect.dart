@@ -1,3 +1,4 @@
+import 'package:new_bluebyte/utils/config.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
@@ -8,7 +9,7 @@ class DBConnect {
         // Set the path to the database. Note: Using the `join` function from the
         // `path` package is best practice to ensure the path is correctly
         // constructed for each platform.
-        join(await getDatabasesPath(), 'bluebyte.db'),
+        join(await getDatabasesPath(), Config.dbName),
         onCreate: (db, version) async {
       await db.execute(
           ''' CREATE TABLE modules (moduleId INTEGER NOT NULL  PRIMARY KEY AUTOINCREMENT,

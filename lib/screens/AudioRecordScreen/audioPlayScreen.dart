@@ -36,12 +36,14 @@ class _AudioPlayScreenState extends State<AudioPlayScreen> {
   StreamSubscription sub3;
   bool isFrench;
   StreamSubscription languageSubscription;
+  // GlobalKey<ScaffoldState>
   // StreamSubscription sub4;
 
   @override
   void initState() {
     audioPlayer = new AudioPlayer();
     isFrench = widget.settings.globalLanguage.getValue() == Config.fr;
+    position = Duration.zero;
     audioPlayer.setUrl(widget.filePath, isLocal: true).then((val) async {
       // final result = await audioPlayer.getDuration();
       // print("result is $result");
@@ -57,7 +59,7 @@ class _AudioPlayScreenState extends State<AudioPlayScreen> {
         int tempseconds = ((totalSeconds % 3600) % 60).floor();
         setState(() {
           position = pos;
-          print(position);
+          // print(position);
           hours = temphours < 10 ? '0$temphours' : '$temphours';
           minutes = tempminutes < 10 ? '0$tempminutes' : '$tempminutes';
           seconds = tempseconds < 10 ? '0$tempseconds' : '$tempseconds';
@@ -69,8 +71,6 @@ class _AudioPlayScreenState extends State<AudioPlayScreen> {
       setState(() {
         position = Duration.zero;
       });
-
-      print("Playing stopped");
     });
 
     sub2 = audioPlayer.onPlayerError.listen((err) {
@@ -80,7 +80,6 @@ class _AudioPlayScreenState extends State<AudioPlayScreen> {
     sub3 = audioPlayer.onDurationChanged.listen((duration) {
       setState(() {
         audioDuration = duration;
-        print("duration is $audioDuration");
       });
     });
 
@@ -95,16 +94,24 @@ class _AudioPlayScreenState extends State<AudioPlayScreen> {
 
   @override
   void dispose() {
-    positionSubscription.cancel();
     sub1.cancel();
     sub2.cancel();
     sub3.cancel();
-    languageSubscription.cancel();
-    // audioPlayer?.release();
+    positionSubscription.cancel();
 
-    audioPlayer?.dispose();
+    if (audioPlayer.state == AudioPlayerState.PLAYING ||
+        audioPlayer.state == AudioPlayerState.PAUSED) audioPlayer.stop();
+
+    // audioPlayer?.dispose();
+
+    languageSubscription.cancel();
 
     super.dispose();
+  }
+
+  @override
+  void deactivate() {
+    super.deactivate();
   }
 
   @override
