@@ -28,7 +28,7 @@ class _HelpControllerState extends State<HelpController>
   Widget build(BuildContext context) {
     final bool isFrench =
         widget.settings.globalLanguage.getValue() == Config.fr;
-    final size = MediaQuery.of(context).size;
+    // final size = MediaQuery.of(context).size;
     return Scaffold(
         appBar: AppBar(
           centerTitle: true,

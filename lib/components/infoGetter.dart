@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:new_bluebyte/components/inputItem.dart';
 import 'package:new_bluebyte/components/purpleButton.dart';
@@ -141,8 +140,7 @@ class _InfoGetterState extends State<InfoGetter> {
                     final finalPath = join(imageDir.path, "$name.jpg");
 
                     try {
-                      final newIm = await imageFile.copy(finalPath);
-                      // print(newIm.path);
+                      await imageFile.copy(finalPath);
                       await imageFile.delete(recursive: true);
                     } catch (e) {
                       print("could not copy the image $e");

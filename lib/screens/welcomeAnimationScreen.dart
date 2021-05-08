@@ -1,6 +1,5 @@
 import 'package:new_bluebyte/components/animatedLetter.dart';
 import 'package:new_bluebyte/components/logoAnimation.dart';
-import 'package:new_bluebyte/screens/HomeScreen/homeScreen.dart';
 import 'package:new_bluebyte/utils/config.dart';
 import 'package:flutter/material.dart';
 

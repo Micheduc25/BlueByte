@@ -5,7 +5,6 @@ import 'package:new_bluebyte/components/objectsPainter.dart';
 import 'package:new_bluebyte/components/pointMode.dart';
 import 'package:new_bluebyte/models/moduleModel.dart';
 import 'package:new_bluebyte/models/newImageModel.dart';
-import 'package:new_bluebyte/models/objectModel.dart';
 import 'package:new_bluebyte/utils/settings.dart';
 
 class SnappableItem extends StatelessWidget {
@@ -40,6 +39,7 @@ class SnappableItem extends StatelessWidget {
             image: FileImage(
               imageFile,
             ),
+            filterQuality: FilterQuality.high,
             fit: BoxFit.contain,
           ),
           ObjectsPainter(

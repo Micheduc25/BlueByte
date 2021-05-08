@@ -102,17 +102,21 @@ class _ModuleScreenState extends State<ModuleScreen>
           },
         ),
         actions: <Widget>[
-          InkWell(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 5),
-              child: Icon(Icons.import_export),
+          Tooltip(
+            message:
+                Languages.export[lang == Config.fr ? Config.fr : Config.en],
+            child: InkWell(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 5),
+                child: Icon(Icons.import_export),
+              ),
+              onTap: () {
+                //total module export here
+                Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) => ExportScreen(
+                        module: widget.module, settings: widget.settings)));
+              },
             ),
-            onTap: () {
-              //total module export here
-              Navigator.of(context).push(MaterialPageRoute(
-                  builder: (context) => ExportScreen(
-                      module: widget.module, settings: widget.settings)));
-            },
           ),
           PopupMenuButton(
             tooltip: Languages.more[widget.isFrench ? Config.fr : Config.en],

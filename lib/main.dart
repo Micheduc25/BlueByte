@@ -3,7 +3,6 @@ import 'package:new_bluebyte/provider/audiosProvider.dart';
 import 'package:new_bluebyte/provider/modulesProvider.dart';
 import 'package:new_bluebyte/provider/newImagesProvider.dart';
 import 'package:new_bluebyte/provider/objectsProvider.dart';
-import 'package:new_bluebyte/screens/HomeScreen/homeScreen.dart';
 import 'package:new_bluebyte/screens/HomeScreen/loadingScreen.dart';
 import 'package:new_bluebyte/screens/LoadProjectScreen/loadProjectScreen.dart';
 

@@ -1,7 +1,6 @@
 import 'package:new_bluebyte/components/objectStackItem.dart';
 import 'package:new_bluebyte/components/pointMode.dart';
 import 'package:new_bluebyte/models/newImageModel.dart';
-import 'package:new_bluebyte/screens/ImageScreen/imageScreen.dart';
 import 'package:new_bluebyte/utils/angleCalculator.dart';
 import 'package:new_bluebyte/utils/colors&fonts.dart';
 import 'package:new_bluebyte/utils/settings.dart';

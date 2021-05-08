@@ -5,7 +5,7 @@ import 'package:new_bluebyte/utils/settings.dart';
 
 class ProjectStructure extends StatelessWidget {
   ProjectStructure({@required this.settings});
-  AppSettings settings;
+  final AppSettings settings;
 
   @override
   Widget build(BuildContext context) {

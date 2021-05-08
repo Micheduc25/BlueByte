@@ -6,7 +6,6 @@ import 'package:new_bluebyte/utils/helpText.dart';
 import 'package:new_bluebyte/utils/settings.dart';
 import 'package:new_bluebyte/utils/styles.dart';
 import 'package:flutter/material.dart';
-import 'projectStructure.dart';
 
 class HelpHome extends StatelessWidget {
   HelpHome({this.settings, @required this.pageController});

@@ -6,8 +6,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_archive/flutter_archive.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:new_bluebyte/components/InfoDialog.dart';
-import 'package:new_bluebyte/components/objectsPainter.dart';
 import 'package:new_bluebyte/components/pointMode.dart';
 import 'package:new_bluebyte/components/snappableItem.dart';
 import 'package:new_bluebyte/models/audioModel.dart';
@@ -15,7 +13,6 @@ import 'package:new_bluebyte/models/moduleModel.dart';
 import 'package:new_bluebyte/models/newImageModel.dart';
 import 'package:new_bluebyte/models/objectModel.dart';
 import 'package:new_bluebyte/provider/audiosProvider.dart';
-import 'package:new_bluebyte/provider/modulesProvider.dart';
 import 'package:new_bluebyte/provider/newImagesProvider.dart';
 import 'package:new_bluebyte/provider/objectsProvider.dart';
 import 'package:new_bluebyte/utils/colors&fonts.dart';
@@ -46,7 +43,7 @@ class _ExportScreenState extends State<ExportScreen> {
 
   // bool _isLoading = true;
   // ObjectImage _currentImage;
-  Object _currentObject;
+  // Object _currentObject;
   double progress = 0;
   int totalImages = 0;
   int totalAudios = 0;
@@ -111,9 +108,9 @@ class _ExportScreenState extends State<ExportScreen> {
       //////////////////////////////////////////////////////////////////////////
 
       //we create the directory in which the project will be exported
-      final appDir = Directory("storage/emulated/0/BlueByte");
+      final exportDir = Directory("storage/emulated/0/BlueByte/Exports");
       final moduleDirectory =
-          Directory('storage/emulated/0/BlueByte/${widget.module.name}');
+          Directory(path.join(exportDir.path, widget.module.name));
       Directory objectsDirectory =
           Directory(path.join(moduleDirectory.path, 'Objects'));
       Directory audiosDirectory =
@@ -218,7 +215,8 @@ class _ExportScreenState extends State<ExportScreen> {
       }
 
       // //after exportation we zip the file
-      final zipFile = File(path.join(appDir.path, '${widget.module.name}.zip'));
+      final zipFile =
+          File(path.join(exportDir.path, '${widget.module.name}.zip'));
       if (await zipFile.exists()) await zipFile.delete(recursive: true);
       await ZipFile.createFromDirectory(
         sourceDir: moduleDirectory,

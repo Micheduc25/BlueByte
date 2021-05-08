@@ -2,13 +2,10 @@ import 'dart:async';
 
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:new_bluebyte/components/exitDialog.dart';
-import 'package:new_bluebyte/components/purpleButton.dart';
-import 'package:new_bluebyte/screens/HomeScreen/loadingScreen.dart';
 import 'package:new_bluebyte/screens/LoadProjectScreen/loadProjectScreen.dart';
 import 'package:new_bluebyte/screens/NewProject/newProject.dart';
 import 'package:new_bluebyte/screens/SettingsScreen/settings_image.dart';
 import 'package:new_bluebyte/screens/help/help.dart';
-import 'package:new_bluebyte/screens/help/helpHome.dart';
 import 'package:new_bluebyte/utils/colors&fonts.dart';
 import 'package:new_bluebyte/utils/config.dart';
 import 'package:new_bluebyte/utils/languages.dart';
@@ -19,7 +16,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:streaming_shared_preferences/streaming_shared_preferences.dart';
-// import '../../models/imageModel.dart' as im;
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -31,7 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String lang;
   AppSettings settings;
   StreamSubscription languageSubs;
-  bool _isLoading;
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -261,7 +257,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           body: Center(
-            child: _isLoading
+            child: _isLoading == true
                 ? CircularProgressIndicator(
                     backgroundColor: AppColors.purpleDark,
                   )
