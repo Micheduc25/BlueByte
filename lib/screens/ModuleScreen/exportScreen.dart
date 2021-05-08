@@ -5,9 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_archive/flutter_archive.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:new_bluebyte/components/InfoDialog.dart';
 import 'package:new_bluebyte/components/objectsPainter.dart';
 import 'package:new_bluebyte/components/pointMode.dart';
+import 'package:new_bluebyte/components/snappableItem.dart';
 import 'package:new_bluebyte/models/audioModel.dart';
 import 'package:new_bluebyte/models/moduleModel.dart';
 import 'package:new_bluebyte/models/newImageModel.dart';
@@ -38,26 +40,34 @@ class _ExportScreenState extends State<ExportScreen> {
   GlobalKey paintKey = GlobalKey();
   List<Object> moduleObjects;
   List<Audio> moduleAudios;
+  List<ObjectImage> objectImages = [];
   PointCollector pointController;
+  List<PointCollector> pointControllers = [];
 
   // bool _isLoading = true;
-  ObjectImage _currentImage;
+  // ObjectImage _currentImage;
   Object _currentObject;
   double progress = 0;
   int totalImages = 0;
   int totalAudios = 0;
   int imageCount = 0;
   int audioCount = 0;
-  bool _canSnap = false;
+  bool _isLoading = true;
+  int currentIndex = 0;
+
   Map<int, File> imageFiles = {};
   @override
   void initState() {
     super.initState();
+    SystemChrome.setPreferredOrientations(
+        [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
 
-    Future.delayed(Duration(milliseconds: 1000), () async {
+    Future.delayed(Duration.zero, () async {
       // bool isFrench = widget.settings.globalLanguage.getValue() == Config.fr;
-      await SystemChrome.setPreferredOrientations(
-          [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
+      setState(() {
+        _isLoading = false;
+      });
+
       //Exportation done here
       // final moduleProvider = Provider.of<ModulesProvider>(context);
       final imagesProvider =
@@ -67,16 +77,33 @@ class _ExportScreenState extends State<ExportScreen> {
       moduleAudios = await Provider.of<AudioProvider>(context, listen: false)
           .getAudios(widget.module.moduleId);
 
-      Map<int, List<ObjectImage>> objectImages = {};
-
       for (int i = 0; i < moduleObjects.length; i++) {
-        objectImages[moduleObjects[i].objectId] =
+        final objImages =
             await imagesProvider.getImages(moduleObjects[i].objectId);
+        objectImages.addAll(objImages);
 
-        totalImages += objectImages[moduleObjects[i].objectId].length;
+        totalImages += objImages.length;
+      }
+
+      //we create corresponding pointControllers for these images
+
+      for (ObjectImage image in objectImages) {
+        final pc = pointController = PointCollector(
+            PointMode.Length, image.imageId, true, widget.settings,
+            objectId: image.objectId,
+            objectName: '',
+            image: image,
+            imagePath: image.path,
+            moduleName: widget.module.name,
+            editService: null,
+            widgetState: null);
+        await pc.loadPoints(context);
+        pointControllers.add(pc);
       }
 
       totalAudios = moduleAudios.length;
+
+      setState(() {});
 
       /////////////////////////////////////////////////////////////////////////////
       ////                                                                    ////
@@ -98,89 +125,57 @@ class _ExportScreenState extends State<ExportScreen> {
         await Permission.storage.request();
       }
 
-      //if directories do not exist we create them
-      if (!(await moduleDirectory.exists())) {
-        await moduleDirectory.create(recursive: true);
-        print('directory created at ${moduleDirectory.path}');
+      // if directories do not exist we create them
+      if ((await moduleDirectory.exists())) {
+        await moduleDirectory.delete(recursive: true);
       }
+      // print('directory created at ${moduleDirectory.path}');
 
-      if (!await objectsDirectory.exists()) {
-        await objectsDirectory.create(recursive: false);
-      }
-      if (await audiosDirectory.exists()) {
-        await audiosDirectory.delete(recursive: true);
-      }
+      await moduleDirectory.create(recursive: true);
+
+      await objectsDirectory.create(recursive: false);
+
       await audiosDirectory.create(recursive: false);
 
       ////////////////////////////////////////////////////////////////////////
+      ///
+      await Future.delayed(Duration(milliseconds: 1500), () {});
 
-      //we iterate over each object and perform screen shots of its images
-      for (int i = 0; i < moduleObjects.length; i++) {
-        _currentObject = moduleObjects[i];
-        Directory imDir = Directory(
-            path.join(objectsDirectory.path, '${_currentObject.name}'));
+      for (int i = 0; i < objectImages.length; i++) {
+        ObjectImage im = objectImages[i];
+        String objName =
+            moduleObjects.firstWhere((obj) => obj.objectId == im.objectId).name;
+        Directory imDir =
+            await Directory(path.join(objectsDirectory.path, objName)).create();
 
-        //if a previous export to the images directory existed we delete the content and create back the directory
-        if (await imDir.exists()) imDir.delete(recursive: true);
+        final finalPath = path.join(imDir.path, "${im.name}.png");
+        await Future.delayed(Duration(milliseconds: 50), () {});
 
-        await imDir.create(recursive: true);
+        RenderRepaintBoundary boundary =
+            paintKey.currentContext.findRenderObject();
+        var image = await boundary.toImage();
+        var byteData = await image.toByteData(format: ImageByteFormat.png);
+        var pngBytes = byteData.buffer.asUint8List();
 
-        for (int j = 0; j < objectImages[_currentObject.objectId].length; j++) {
-          _currentImage = objectImages[_currentObject.objectId][j];
-          imageFiles.addAll({_currentImage.imageId: File(_currentImage.path)});
+        try {
+          File imgFile = await File("$finalPath").create(recursive: true);
+          await imgFile.writeAsBytes(pngBytes);
 
-          pointController = PointCollector(
-              PointMode.Length, _currentImage.imageId, true, widget.settings,
-              objectId: _currentObject.objectId,
-              objectName: _currentObject.name,
-              image: _currentImage,
-              imagePath: _currentImage.path,
-              moduleName: widget.module.name,
-              editService: null,
-              widgetState: null);
+          setState(() {
+            imageCount++;
 
-          //after initializing the points controller we load all the points for the current image
-          await pointController.loadPoints(context);
-
-          setState(() {});
-
-          await Future.delayed(Duration(milliseconds: 1500), () async {
-            //we then take a screenshot and move to the next image
-            /////////////////////////////////////////////////////////////////////////////
-
-            final finalPath =
-                path.join(imDir.path, "${_currentImage.name}.png");
-
-            RenderRepaintBoundary boundary =
-                paintKey.currentContext.findRenderObject();
-            var image = await boundary.toImage();
-            var byteData = await image.toByteData(format: ImageByteFormat.png);
-            var pngBytes = byteData.buffer.asUint8List();
-
-            try {
-              print("before file creation");
-              File imgFile = new File("$finalPath");
-              // if (await imgFile.exists()) imgFile.delete();
-              // imgFile.create(recursive: true);
-
-              imageCount++;
-
-              imgFile.writeAsBytes(pngBytes);
-
-              setState(() {
-                progress =
-                    (((imageCount + audioCount) / (totalImages + totalAudios)) *
-                        100);
-              });
-            } catch (err) {
-              if (err is FileSystemException) {
-                print('fileSystemException:$err');
-              }
-
-              print("error:$err");
+            progress =
+                (((imageCount + audioCount) / (totalImages + totalAudios)) *
+                    100);
+            if (currentIndex < objectImages.length - 1) {
+              currentIndex++;
+              print("index is $currentIndex");
             }
-            ////////////////////////////////////////////////////////////////////////////
           });
+
+          // setState(() {});
+        } catch (err) {
+          Fluttertoast.showToast(msg: 'error:$err');
         }
       }
 
@@ -222,7 +217,7 @@ class _ExportScreenState extends State<ExportScreen> {
         }
       }
 
-      //after exportation we zip the file
+      // //after exportation we zip the file
       final zipFile = File(path.join(appDir.path, '${widget.module.name}.zip'));
       if (await zipFile.exists()) await zipFile.delete(recursive: true);
       await ZipFile.createFromDirectory(
@@ -254,8 +249,9 @@ class _ExportScreenState extends State<ExportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    bool isFrench = widget.settings.globalLanguage.getValue() == Config.fr;
     return Scaffold(
-        body: _currentObject != null && _currentImage != null
+        body: objectImages != null && !_isLoading
             ? Stack(
                 alignment: Alignment.center,
                 children: [
@@ -269,80 +265,45 @@ class _ExportScreenState extends State<ExportScreen> {
                         ),
                         child: Stack(
                           fit: StackFit.expand,
-                          children: [
-                            Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                Image(
-                                  image: FileImage(
-                                    imageFiles[_currentImage.imageId],
-                                  ),
-                                  fit: BoxFit.contain,
-                                  // filterQuality: FilterQuality.high,
-                                  loadingBuilder:
-                                      (context, child, loadingProgress) {
-                                    if (loadingProgress == null)
-                                      return child;
-                                    else {
-                                      print(loadingProgress
-                                          .cumulativeBytesLoaded);
-                                      if ((loadingProgress
-                                                  .cumulativeBytesLoaded /
-                                              loadingProgress
-                                                  .expectedTotalBytes) >=
-                                          1) {
-                                        setState(() {
-                                          _canSnap = true;
-                                          print('can snap changed ohhh!');
-                                        });
-                                        return child;
-                                      } else {
-                                        setState(() {
-                                          if (_canSnap) _canSnap = false;
-                                        });
-                                        return CircularProgressIndicator(
-                                          backgroundColor: AppColors.purpleDark,
-                                          value: loadingProgress
-                                                  .cumulativeBytesLoaded /
-                                              loadingProgress
-                                                  .expectedTotalBytes,
-                                        );
-                                      }
-                                    }
-                                  },
-                                ),
-                                ObjectsPainter(
-                                    context: context,
-                                    image: _currentImage,
-                                    imagePath: _currentImage.path,
-                                    isFrench: widget.settings.globalLanguage
-                                            .getValue() ==
-                                        Config.fr,
-                                    moduleName: widget.module.name,
-                                    objectId: _currentObject.objectId,
-                                    objectName: _currentObject.name,
-                                    pointControllerState: pointController,
-                                    settings: widget.settings,
-                                    state: this,
-                                    strokeWidth:
-                                        widget.settings.lineWidth.getValue(),
-                                    objectsToPaint:
-                                        pointController.objectStackFinal)
-                              ],
-                            ),
-                          ],
+                          children: List<SnappableItem>.generate(
+                              objectImages.length, (index) {
+                            final im = objectImages[index];
+                            return SnappableItem(
+                                isVisible: index == currentIndex,
+                                imageFile: File(im.path),
+                                objectImage: im,
+                                isFrench: isFrench,
+                                module: widget.module,
+                                objectId: im.objectId,
+                                pointController: pointControllers[index],
+                                settings: widget.settings,
+                                wstate: this);
+                          }).reversed.toList(),
                         )),
                   ),
                   Container(
                     constraints: BoxConstraints.expand(),
                     color: Colors.black.withOpacity(.6),
                     child: Center(
-                      child: Text(
-                        '${progress.toStringAsFixed(2)}%',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 40,
-                            fontWeight: FontWeight.bold),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          progress == 100
+                              ? Container()
+                              : CircularProgressIndicator(
+                                  backgroundColor: AppColors.purpleDark,
+                                ),
+                          SizedBox(
+                            height: 10,
+                          ),
+                          Text(
+                            '${progress.toStringAsFixed(2)}%',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 40,
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ],
                       ),
                     ),
                   ),
