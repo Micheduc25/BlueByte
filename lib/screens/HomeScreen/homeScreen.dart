@@ -27,7 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String lang;
   AppSettings settings;
   StreamSubscription languageSubs;
-  bool _isLoading = true;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -257,88 +257,81 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           body: Center(
-            child: _isLoading == true
-                ? CircularProgressIndicator(
-                    backgroundColor: AppColors.purpleDark,
-                  )
-                : Container(
-                    alignment: Alignment.center,
-                    child: _prefs != null
-                        ? Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: <Widget>[
-                              Text(
-                                lang == Config.fr
-                                    ? Languages.whatToDo[Config.fr]
-                                    : Languages.whatToDo[Config.en],
-                                style: TextStyle(
-                                    color: AppColors.purpleNormal,
-                                    fontSize: 20),
-                              ),
-                              SizedBox(
-                                height: 20,
-                              ),
-                              RaisedButton(
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: <Widget>[
-                                    Icon(
-                                      Icons.add,
-                                      color: Colors.white,
-                                    ),
-                                    SizedBox(
-                                      width: 5,
-                                    ),
-                                    Text(
-                                        lang == Config.fr
-                                            ? Languages.createProject[Config.fr]
-                                            : Languages
-                                                .createProject[Config.en],
-                                        style: Styles.whiteTextNormal),
-                                  ],
+            child: Container(
+                alignment: Alignment.center,
+                child: _prefs != null || _isLoading == true
+                    ? Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Text(
+                            lang == Config.fr
+                                ? Languages.whatToDo[Config.fr]
+                                : Languages.whatToDo[Config.en],
+                            style: TextStyle(
+                                color: AppColors.purpleNormal, fontSize: 20),
+                          ),
+                          SizedBox(
+                            height: 20,
+                          ),
+                          RaisedButton(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: <Widget>[
+                                Icon(
+                                  Icons.add,
+                                  color: Colors.white,
                                 ),
-                                padding: EdgeInsets.symmetric(
-                                    vertical: 10, horizontal: 15),
-                                color: AppColors.purpleNormal,
-                                onPressed: () {
-                                  Navigator.of(context).push(MaterialPageRoute(
-                                      builder: (context) =>
-                                          NewProjectScreen()));
-                                },
-                              ),
-                              SizedBox(height: 20),
-                              RaisedButton(
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: <Widget>[
-                                    Icon(
-                                      Icons.rotate_right,
-                                      color: Colors.white,
-                                    ),
-                                    SizedBox(
-                                      width: 5,
-                                    ),
-                                    Text(
-                                        lang == Config.fr
-                                            ? Languages.openProject[Config.fr]
-                                            : Languages.openProject[Config.en],
-                                        style: Styles.whiteTextNormal),
-                                  ],
+                                SizedBox(
+                                  width: 5,
                                 ),
-                                padding: EdgeInsets.symmetric(
-                                    vertical: 10, horizontal: 15),
-                                color: AppColors.purpleNormal,
-                                onPressed: () {
-                                  Navigator.of(context).push(MaterialPageRoute(
-                                      builder: (context) => LoadProjectScreen(
-                                          settings: settings)));
-                                },
-                              )
-                            ],
+                                Text(
+                                    lang == Config.fr
+                                        ? Languages.createProject[Config.fr]
+                                        : Languages.createProject[Config.en],
+                                    style: Styles.whiteTextNormal),
+                              ],
+                            ),
+                            padding: EdgeInsets.symmetric(
+                                vertical: 10, horizontal: 15),
+                            color: AppColors.purpleNormal,
+                            onPressed: () {
+                              Navigator.of(context).push(MaterialPageRoute(
+                                  builder: (context) => NewProjectScreen()));
+                            },
+                          ),
+                          SizedBox(height: 20),
+                          RaisedButton(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: <Widget>[
+                                Icon(
+                                  Icons.rotate_right,
+                                  color: Colors.white,
+                                ),
+                                SizedBox(
+                                  width: 5,
+                                ),
+                                Text(
+                                    lang == Config.fr
+                                        ? Languages.openProject[Config.fr]
+                                        : Languages.openProject[Config.en],
+                                    style: Styles.whiteTextNormal),
+                              ],
+                            ),
+                            padding: EdgeInsets.symmetric(
+                                vertical: 10, horizontal: 15),
+                            color: AppColors.purpleNormal,
+                            onPressed: () {
+                              Navigator.of(context).push(MaterialPageRoute(
+                                  builder: (context) =>
+                                      LoadProjectScreen(settings: settings)));
+                            },
                           )
-                        : CircularProgressIndicator(
-                            backgroundColor: AppColors.purpleNormal,
-                          )),
+                        ],
+                      )
+                    : CircularProgressIndicator(
+                        backgroundColor: AppColors.purpleNormal,
+                      )),
           ),
         ),
       ),

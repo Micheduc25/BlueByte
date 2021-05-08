@@ -27,6 +27,7 @@ apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 android {
     compileSdkVersion 30
 
+
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId "com.nashma.new_bluebyte"
@@ -37,10 +38,18 @@ android {
     }
 
     buildTypes {
+        
         release {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig signingConfigs.debug
+
+            // signingConfig signingConfigs.release
+
+            minifyEnabled false
+            shrinkResources false
+
+            
         }
     }
 }

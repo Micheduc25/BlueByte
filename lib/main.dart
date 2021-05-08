@@ -3,6 +3,7 @@ import 'package:new_bluebyte/provider/audiosProvider.dart';
 import 'package:new_bluebyte/provider/modulesProvider.dart';
 import 'package:new_bluebyte/provider/newImagesProvider.dart';
 import 'package:new_bluebyte/provider/objectsProvider.dart';
+import 'package:new_bluebyte/screens/HomeScreen/homeScreen.dart';
 import 'package:new_bluebyte/screens/HomeScreen/loadingScreen.dart';
 import 'package:new_bluebyte/screens/LoadProjectScreen/loadProjectScreen.dart';
 
@@ -29,12 +30,11 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     //we load our shared preferences
-    StreamingSharedPreferences.instance.then((pref) {
+     StreamingSharedPreferences.instance.then((pref) {
       setState(() {
         prefs = pref;
       });
     });
-
     super.initState();
   }
 

@@ -33,7 +33,7 @@ class _LoadingScreenState extends State<LoadingScreen>
 
   @override
   void dispose() {
-    controller.dispose();
+    controller?.dispose();
     super.dispose();
   }
 

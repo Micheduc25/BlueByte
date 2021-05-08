@@ -8,7 +8,7 @@
     
 
    <application
-        android:label="bluebyte"
+        android:label="BlueByte"
         android:icon="@mipmap/logo">
         <activity
             android:name=".MainActivity"
